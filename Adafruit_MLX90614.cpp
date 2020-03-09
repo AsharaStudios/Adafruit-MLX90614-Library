@@ -82,3 +82,44 @@ uint16_t Adafruit_MLX90614::read16(uint8_t a) {
 
   return ret;
 }
+
+uint8_t crc8Msb(uint8_t poly, uint8_t* data, int size);
+
+void Adafruit_MLX90614::write16(uint8_t addr, uint16_t data) {
+  uint8_t buff[5];
+  buff[0] = _addr;
+  buff[1] = addr;
+  buff[2] = data & 0x00FF;
+  buff[3] = data >> 8;
+  buff[4] = crc8Msb(0x07, buff, 4);
+
+  Wire.beginTransmission(_addr); // start transmission to device
+  Wire.write(&buff[1],4); // sends register address to read from
+  Wire.endTransmission();
+}
+
+/****************************************************************
+ * Function Name: crc8_msb
+ * Description:  CRC8 check to compare PEC data
+ * Parameters: poly - x8+x2+x1+1, data - array to check, array size
+ * Return: 0 – data right; 1 – data Error
+****************************************************************/
+uint8_t crc8Msb(uint8_t poly, uint8_t* data, int size) {
+  uint8_t crc = 0x00;
+  int bit;
+
+  while (size--)
+  {
+    crc ^= *data++;
+    for (bit = 0; bit < 8; bit++)
+    {
+      if (crc & 0x80) {
+        crc = (crc << 1) ^ poly;
+      } else {
+        crc <<= 1;
+      }
+    }
+  }
+
+  return crc;
+}
